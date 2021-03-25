@@ -40,9 +40,9 @@ import json
 
 world = dict()
 # set this to something sane 
-calls = 3000
+# calls = 3000
 # ugh there's too much output? Well drop calls down
-# calls = 100
+calls = 10
 
 def utf8(utf8bytes):
     return utf8bytes.decode("utf-8")
@@ -54,28 +54,39 @@ class WorldClient(WebSocketClient):
             self.name = ""
 
     def send_new_entity(self,i):
+        print("GET ME OUTTA HERE2")
+        # {"X0":{'x':1,'y':1}}
         entity = "X"+str(i)
         data = {'x':i,'y':i}
         world[entity] = data
         packet = { entity : data }
         self.send(json.dumps(packet))
-        print("Sent %s" % entity)
+        print("Sent %s with %s" % (entity,data))
 
     def closed(self, code, reason):
+        print("GET ME OUTTA HERE1")
         print(("Closed down %s " % self.name, code, reason))
 
     def receive_my_message(self,m):
-        print("RECV %s " % m)
+        print("RECV! %s " % m)
         w = json.loads(utf8(m.data))
+        # print(f"the w is {w}") 
         kcnt = 0
+        print("beginning for loop")
         for key in w:
+            print(f"{key} is a key in the world")
             if (key in world):
+                print("key is in world")
                 assert world[key] == w[key]
+                print("key is equal")
             world[key] = w[key]
             kcnt += 1
+        print("done for loop")
         if (kcnt > 0):
             self.count += 1
+        print(f"self.count is {self.count} and calls is {calls}")
         if (self.count >= calls):
+            print("bye????")
             self.close(reason='Bye bye')
 
     def incoming(self):
@@ -86,45 +97,52 @@ class WorldClient(WebSocketClient):
                 self.receive_my_message( m )
             else:
                 return
+        print("GET ME OUTTA HERE")
 
     def outgoing(self):
+        print("moving on???????/")
         for i in range(0,calls):
             self.send_new_entity(i)
         
 if __name__ == '__main__':
-    try:
-        os.system("kill -9 $(lsof -t -i:8000)");
-        os.system("bash run.sh &");
-        print("Sleeping 3 seconds")
-        gevent.sleep(3)
-        ws = WorldClient('ws://127.0.0.1:8000/subscribe', protocols=['http-only', 'chat'])
-        ws2 = WorldClient('ws://127.0.0.1:8000/subscribe', protocols=['http-only', 'chat'])
-        ws.daemon = False
-        ws2.daemon = False
-        ws.name = "Reader/Writer"
-        ws2.name = "Reader"
-        ws.connect()     
-        ws2.connect()     
-        ''' what we're doing here is that we're sending new entities and getting them
-            back on the websocket '''
-        greenlets = [
-            gevent.spawn(ws.incoming),
-            gevent.spawn(ws.outgoing),
-        ]
-        gws2 = gevent.spawn(ws2.incoming)
-        gevent.joinall(greenlets)
-        ws2.close()
-        gws2.join(timeout=1)
-        # here's our final test
-        print("Counts: %s %s" % (ws.count , ws2.count))
-        assert ws.count == calls, ("Expected Responses were given! %d %d" % (ws.count, calls))
-        assert ws2.count >= (9*calls/10), ("2nd Client got less than 9/10 of the results! %s" % ws2.count)
-        print("Looks like the tests passed!")
-    finally:
+    # try:
+    os.system("kill -9 $(lsof -t -i:8000)");
+    os.system("bash run.sh &");
+    print("Sleeping 3 seconds")
+    gevent.sleep(3)
+    ws = WorldClient('ws://127.0.0.1:8000/subscribe', protocols=['http-only', 'chat'])
+    ws2 = WorldClient('ws://127.0.0.1:8000/subscribe', protocols=['http-only', 'chat'])
+    ws.daemon = False
+    ws2.daemon = False
+    ws.name = "Reader/Writer"
+    ws2.name = "Reader"
+    ws.connect()     
+    ws2.connect()     
+    ''' what we're doing here is that we're sending new entities and getting them
+        back on the websocket '''
+    print("bleh")
+    greenlets = [
+        gevent.spawn(ws.incoming),
+        gevent.spawn(ws.outgoing),
+    ]
+    gws2 = gevent.spawn(ws2.incoming)
+    print("2")
+    gevent.joinall(greenlets)
+    print("wait...")
+    ws2.close()
+    print("nani")
+    gws2.join(timeout=1)
+    # here's our final test
+    print("GET ME OUTTA HERE5")
+    print("Counts: %s %s" % (ws.count , ws2.count))
+    assert ws.count == calls, ("Expected Responses were given! %d %d" % (ws.count, calls))
+    assert ws2.count >= (9*calls/10), ("2nd Client got less than 9/10 of the results! %s" % ws2.count)
+    print("Looks like the tests passed!")
+    # finally:
         #except KeyboardInterrupt:
-        ws.close()
-        ws2.close()
-        gevent.sleep(1)
-        os.system("kill -9 $(lsof -t -i:8000)");
-        print("Sleeping 2 seconds")
-        gevent.sleep(2)
+    ws.close()
+    ws2.close()
+    gevent.sleep(1)
+    os.system("kill -9 $(lsof -t -i:8000)");
+    print("Sleeping 2 seconds")
+    gevent.sleep(2)

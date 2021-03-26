@@ -72,7 +72,7 @@ class World:
     
 
 myWorld = World()        
-myWorld.space["L"] = {"x":0,"y":2,"colour":"orange"}
+# myWorld.space["L"] = {"x":0,"y":2,"colour":"orange"}
 
 # def set_listener( entity, data ):
 #     ''' do something with the update ! '''
@@ -100,11 +100,11 @@ def read_ws(ws,client):
                         send_all(json.dumps({key:myWorld.get(key)}))
                     elif not (key in myWorld.world().keys()): # If entity does not exist, create and send update to others
                         myWorld.set(key,recv_coordinate[key])
-                        send_others(client,json.dumps({key:myWorld.get(key)}))
+                        send_all(json.dumps({key:myWorld.get(key)}))
             else:
                 break
     except Exception as e:
-        print("closed")
+        print("This connection is now closed")
         print(e)
 # Code taken from Abram Hindle at 2021-03-24 at https://github.com/abramhindle/WebSocketsExamples/blob/master/chat.py
 class Client:
@@ -138,6 +138,7 @@ def subscribe_socket(ws):
             msg = client.get()
             ws.send(msg)
     except Exception as e:
+        print("something happened in subsribe_socket")
         print(e)
     finally:
         myWorld.remove_listener(client)

@@ -42,7 +42,7 @@ world = dict()
 # set this to something sane 
 # calls = 3000
 # ugh there's too much output? Well drop calls down
-calls = 10
+calls = 3
 
 def utf8(utf8bytes):
     return utf8bytes.decode("utf-8")
@@ -54,7 +54,6 @@ class WorldClient(WebSocketClient):
             self.name = ""
 
     def send_new_entity(self,i):
-        print("GET ME OUTTA HERE2")
         # {"X0":{'x':1,'y':1}}
         entity = "X"+str(i)
         data = {'x':i,'y':i}
@@ -64,45 +63,43 @@ class WorldClient(WebSocketClient):
         print("Sent %s with %s" % (entity,data))
 
     def closed(self, code, reason):
-        print("GET ME OUTTA HERE1")
         print(("Closed down %s " % self.name, code, reason))
+        print("now what?")
 
     def receive_my_message(self,m):
         print("RECV! %s " % m)
         w = json.loads(utf8(m.data))
         # print(f"the w is {w}") 
         kcnt = 0
-        print("beginning for loop")
         for key in w:
-            print(f"{key} is a key in the world")
             if (key in world):
-                print("key is in world")
                 assert world[key] == w[key]
-                print("key is equal")
             world[key] = w[key]
             kcnt += 1
-        print("done for loop")
         if (kcnt > 0):
             self.count += 1
         print(f"self.count is {self.count} and calls is {calls}")
         if (self.count >= calls):
-            print("bye????")
+            print("self.count >= calls")
             self.close(reason='Bye bye')
 
     def incoming(self):
+        print("inside the incoming")
         while self.count < calls:
+            print("waiting...")
             m = self.receive()
             print("Incoming RECV %s %s " % (self.name,m))
             if m is not None:
                 self.receive_my_message( m )
             else:
                 return
-        print("GET ME OUTTA HERE")
+        print("finished with incoming")
 
     def outgoing(self):
-        print("moving on???????/")
+        print("inside the outgoing")
         for i in range(0,calls):
             self.send_new_entity(i)
+        print("finished with outgoing")
         
 if __name__ == '__main__':
     # try:
@@ -120,20 +117,19 @@ if __name__ == '__main__':
     ws2.connect()     
     ''' what we're doing here is that we're sending new entities and getting them
         back on the websocket '''
-    print("bleh")
+    print("ws and ws2 are now connected")
     greenlets = [
         gevent.spawn(ws.incoming),
         gevent.spawn(ws.outgoing),
     ]
     gws2 = gevent.spawn(ws2.incoming)
-    print("2")
+    print("gevent.spawn(ws2.incoming) is done being called")
     gevent.joinall(greenlets)
     print("wait...")
     ws2.close()
-    print("nani")
+    print("closed ws2")
     gws2.join(timeout=1)
     # here's our final test
-    print("GET ME OUTTA HERE5")
     print("Counts: %s %s" % (ws.count , ws2.count))
     assert ws.count == calls, ("Expected Responses were given! %d %d" % (ws.count, calls))
     assert ws2.count >= (9*calls/10), ("2nd Client got less than 9/10 of the results! %s" % ws2.count)

@@ -1,3 +1,5 @@
+Brian Qi (bqi1)
+
 CMPUT404-assignment-websockets
 ==============================
 Installation error was thrown with gevent==1.4.0 and greenlet ==0.4.15 on Windows
